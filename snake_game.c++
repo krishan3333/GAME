@@ -26,10 +26,9 @@ struct point
 {
     int xCoord;
     int yCoord;
-    point(int x , int y ){
-        xCoord = x;
-        yCoord = y;
-    }
+     point() : xCoord(0), yCoord(0) {}  
+    
+    point(int x, int y) : xCoord(x), yCoord(y) {}
 };
 class Snake {
     int length ;
@@ -41,37 +40,146 @@ public:
         body[0]=point(x,y);
         direction = DIR_RIGHT;
     }
-    ~Snake(){
-        delete[] body;
-    }
+    
     int getlength(){
         return length;
 
     }
     void changeDirection(char newDirection){
-        if(newDirection==DIR_UP && !direction == DIR_DOWN){
+        if(newDirection==DIR_UP && direction != DIR_DOWN){
             direction= newDirection;
         }
-        else if (newDirection == DIR_DOWN && !direction==DIR_UP){
+        else if (newDirection == DIR_DOWN && direction!=DIR_UP){
             direction= newDirection;
         }
-        else if(newDirection== DIR_LEFT && !direction== DIR_RIGHT){
+        else if(newDirection== DIR_LEFT && direction!= DIR_RIGHT){
             direction= newDirection;
         }
-        else if(newDirection== DIR_RIGHT && !direction== DIR_LEFT){
+        else if(newDirection== DIR_RIGHT && direction!= DIR_LEFT){
             direction= newDirection;
         }
+    }
+    bool move(point  food){
+        for (int i=length-1;i>0;i--){
+            body[i] = body[i-1];
+        }
+        switch(direction){
+            
+            case DIR_UP:
+                body[0].yCoord--;
+                
+                break;
+            case DIR_DOWN:
+                body[0].yCoord++;
+                
+                break;
+            case DIR_LEFT:
+                
+                body[0].xCoord--;
+                break;
+            case DIR_RIGHT:
+                 body[0].xCoord++;
+                     
+                break;
+        }
+        for(int i=1;i<length;i++){
+            if(body[0].xCoord==body[i].xCoord && body[0].yCoord==body[i].yCoord ){
+                return false;
+            }    
+        }
+        if(food.xCoord==body[0].xCoord && food.yCoord==body[0].yCoord){
+            body[length]=point(body[length-1].xCoord,body[length-1].yCoord);
+            length++;
+        }
+        return true;
     }
     
 };
 class Board{
     Snake *snake;
+    const char SNAKE_BODY='O';
+    point food;
+    const char Food = 'o';
+    int score;
+public:
+    Board(){
+        spawnFood();
+        snake = new Snake (10,10);
+        score = 0;
+
+    }
+    ~Board(){
+        delete snake;
+    }
+    int getscore(){
+        return score;
+
+    }
+    void spawnFood(){
+        int x = rand()%consoleWidth ;
+        int y = rand()%consoleHeight ;
+        food= point(x,y);
+    }
+    void gotoxy(int x , int y){
+        COORD coord;
+        coord.X= x;
+        coord.Y= y;
+        SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE),coord);
+    }
+    void draw(){
+        system ("cls");
+        for (int i = 0;i<snake->getlength();i++){
+            gotoxy(snake->body[i].xCoord,snake->body[i].yCoord);
+            cout<< SNAKE_BODY;
+        }
+        gotoxy(food.xCoord,food.yCoord);
+        cout<< Food;
+    }
+    bool update (){
+       bool isalive= snake ->move(food);
+       if (!isalive){
+        return false;
+       }
+       if(food.xCoord==snake->body[0].xCoord && food.yCoord==snake->body[0].yCoord){
+            score++;
+            spawnFood();
+        }
+       return true;
+    }
+    void getInput(){
+        if(kbhit()){
+            int key = getch();
+            if(key=='w'|| key =='W'){
+                snake->changeDirection(DIR_UP);
+            }
+            else if (key == 'a'|| key== 'A'){
+                snake->changeDirection(DIR_LEFT);
+            }
+            else if (key == 'd'|| key== 'D'){
+                snake->changeDirection(DIR_RIGHT);
+            }
+            else if (key == 's'|| key== 'S'){
+                snake->changeDirection(DIR_DOWN);
+            }
+        }
+    }
+
 
 };
 
 int main() {
-     
+    srand(time(0));
+    initscreen();
+    Board *board= new Board();
+    while(board->update()){
+        board->getInput();
+        board->draw();
+        Sleep(100);
 
+    }
+    cout<<"Game Over"<<endl;
+    delete board;
+    
 
     return 0;
 }
